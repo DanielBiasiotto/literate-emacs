@@ -1,0 +1,423 @@
+#+TITLE: Dan's Emacs Config
+#+AUTHOR: Daniel Biasiotto
+#+OPTIONS: toc:4 h:4
+#+STARTUP: showeverything
+#+PROPERTY: header-args:emacs-lisp    :tangle "~/.config/emacs/init.el" :results silent
+
+* Configuration
+** About this file
+<<babel-init>>
+     This is a literate config tangled to emacs's =init.el= file.
+     Great sources for this kind of goodness are:
+   :PROPERTIES:
+   :CUSTOM_ID: babel-init
+   :END:
+- [[https://github.com/sachac/.emacs.d/blob/gh-pages/Sacha.org][Sacha Chua's Emacs]]
+- [[https://github.com/joseph8th/literatemacs/blob/master/README.org][LiteratEmacs]]
+
+** Personal information
+
+#+BEGIN_SRC emacs-lisp
+(setq user-full-name "Daniel Biasiotto"
+      user-mail-address "d.b@disroot.org")
+#+END_SRC
+
+** Backups
+
+This is one of the things people usually want to change right away. By default, Emacs saves backup files in the current directory. These are the files ending in =~= that are cluttering up your directory lists. The following code stashes them all in =~/.config/emacs/backups=, where I can find them with =C-x C-f= (=find-file=) if I really need to.
+
+#+BEGIN_SRC emacs-lisp
+(setq backup-directory-alist '(("." . "~/.config/emacs/backups")))
+#+END_SRC
+
+Disk space is cheap. Save lots.
+
+#+BEGIN_SRC emacs-lisp
+(setq delete-old-versions -1)
+(setq version-control t)
+(setq vc-make-backup-files t)
+(setq auto-save-file-name-transforms '((".*" "~/.config/emacs/auto-save-list/" t)))
+#+END_SRC#
+
+** Emacs Service
+#+BEGIN_EXAMPLE
+[Unit]
+Description=Emacs text editor
+Documentation=info:emacs man:emacs(1) https://gnu.org/software/emacs/
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/emacs --fg-daemon
+ExecStop=/usr/bin/emacsclient --eval "(kill-emacs)"
+Environment=SSH_AUTH_SOCK=%t/keyring/ssh
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
+#+END_EXAMPLE
+In =~/.config/systemd/user/emacs.service=
+
+** Initialize
+Stuff to do on startup
+#+BEGIN_SRC emacs-lisp
+;; Path to nano emacs modules (mandatory)
+(add-to-list 'load-path "~/.config/emacs/config/nano-emacs")
+(add-to-list 'load-path "~/.config/emacs/config")
+(add-to-list 'load-path ".")
+
+;(setq max-lisp-eval-depth 5000) ;; For a bug in hooking Writer-mode to org
+#+END_SRC
+
+** Command Line Options
+#+BEGIN_SRC emacs-lisp
+;; Theming Command line options (this will cancel warning messages)
+(add-to-list 'command-switch-alist '("-dark"   . (lambda (args))))
+(add-to-list 'command-switch-alist '("-light"  . (lambda (args))))
+(add-to-list 'command-switch-alist '("-default"  . (lambda (args))))
+
+(cond
+ ((member "-default" command-line-args) t)
+ ((member "-dark" command-line-args) (require 'nano-theme-dark))
+ (t (require 'nano-theme-dark)))
+#+END_SRC
+
+** Custom Settings in its file
+Keep custom setting in a separate file to not pollute =init.el=
+#+BEGIN_SRC emacs-lisp
+(let* ((this-file  (or load-file-name (buffer-file-name)))
+       (this-dir  (file-name-directory this-file))
+       (custom-path  (concat this-dir "custom.el")))
+  (when (and (eq nil user-init-file)
+     (eq nil custom-file)
+     (file-exists-p custom-path))
+    (setq user-init-file this-file)
+    (setq custom-file custom-path)
+    (load custom-file)))
+#+END_SRC
+
+** Package Source and Setup
+Disabling ~package-enable-at-startup~ will make startup a little quicker
+#+BEGIN_SRC emacs-lisp
+(require 'package)
+(setq package-check-signature nil)  ; because GNU ELPA keeps choking on the sigs
+(add-to-list 'package-archives '("gnu" . "http://elpa.gnu.org/packages/"))
+(add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
+(setq package-enable-at-startup nil)
+#+END_SRC
+
+** Bootstrap use-package
+#+BEGIN_SRC emacs-lisp
+; Bootstrap use-package
+(unless (package-installed-p 'use-package)
+ (package-refresh-contents)
+ (package-install 'use-package))
+(setq use-package-verbose t)
+(setq use-package-always-ensure t)
+(eval-when-compile (require 'use-package))
+(use-package auto-compile
+ :config (auto-compile-on-load-mode))
+(setq load-prefer-newer t)
+#+END_SRC
+
+** Increase garbage collector
+Nice little tidbit copied directly from Jamie Collinson's config.
+Bumps startup speed.
+
+#+BEGIN_SRC emacs-lisp
+;; Increase garbage collection during startup
+(setq gc-cons-threshold 10000000)
+;; Restore after startup
+(add-hook 'after-init-hook
+      (lambda ()
+    (setq gc-cons-threshold 1000000)
+    (message "gc-cons-threshold restored to %S"
+         gc-cons-threshold)))
+#+END_SRC
+
+** Nuke Whitespace
+For cleaner files
+#+BEGIN_SRC emacs-lisp
+;; Remove useless whitespace before saving a file
+(setq-default nuke-trailing-whitespace-p t)
+(add-hook 'before-save-hook 'whitespace-cleanup)
+(add-hook 'before-save-hook (lambda() (delete-trailing-whitespace)))
+#+END_SRC
+
+** Look
+Remember to run ~M-x all-the-icons-install-fonts~
+#+BEGIN_SRC emacs-lisp
+;; Did you run all-the-icons-install-fonts?
+(use-package all-the-icons)
+
+;; Set the default face
+(set-face-attribute 'default nil :font "Iosevka" :height 85)
+
+;; Set the fixed pitch face
+(set-face-attribute 'fixed-pitch nil :font "Iosevka" :height 85)
+#+END_SRC
+
+Set =preferences= and Highlight corresponding =parentheses=
+#+BEGIN_SRC emacs-lisp
+;(setq-default line-spacing 0)
+(set-face-background 'show-paren-match "wheat")
+(set-face-attribute 'show-paren-match nil :weight 'extra-bold)
+(show-paren-mode)
+
+;; Window layout (optional)
+(require 'nano-layout)
+#+END_SRC
+
+** Theme and Modeline
+#+BEGIN_SRC emacs-lisp
+    ;; Theme
+    (require 'nano-faces)
+    (nano-faces)
+    (require 'nano-theme)
+    (nano-theme)
+#+END_SRC
+Modeline in from =NΛNO-Emacs=, hacked to show time and battery
+#+BEGIN_SRC emacs-lisp
+  ;; Nano header & mode lines (optional)
+  (require 'time)
+  (require 'battery)
+  (setq system-time-locale "C") ;; show english even LANG to zh_CN.UTF-8
+  ;(display-time)
+  (display-battery-mode)
+  (setq battery-mode-line-format "%b%p%%" ;; sml would override it, Format is:[%L %b%p%% %t]
+    battery-update-interval 5)
+  (require 'nano-modeline)
+  (setq inihibit-startup-message nil)
+  ;; (use-package smart-mode-line         ;; Saved for when I'll try it
+  ;;    :init
+  ;;    (setq sml/col-number-format "%02c"
+  ;;      sml/battery-format " [%L %b%p%% %t]"
+  ;;      sml/name-width 15
+  ;;      sml/no-confirm-load-theme t
+  ;;      ;; sml/theme 'dark ;; others: light, respectful
+  ;;      sml/theme 'dark)
+  ;;     (sml/setup)
+  ;;     (add-to-list 'sml/replacer-regexp-list '(".*/linux" ":LK:")))
+#+END_SRC
+** Line Numbers
+Good loking line numbers, currently using the position widget on ~nano-modeline~ though.
+#+BEGIN_SRC emacs-lisp
+  ;; Line numbers
+  (require 'display-line-numbers)
+  (defun y/line-numbers--face(&optional theme-unused  no-confirm-unused
+                  no-enable-unused)
+         "Line numbers config."
+         (interactive)
+         (setq display-line-numbers-grow-only t)
+         (set-face-attribute 'line-number nil
+                 :inherit 'linum
+                 :height 70
+                 :weight 'medium
+                 :slant 'italic
+                 :foreground "#495057")
+         (set-face-attribute 'line-number-current-line nil
+                 :inherit 'line-number
+                 :foreground "#868E96"))
+
+  ;; advice after load-theme because theme will reset it
+  (advice-add 'load-theme :after #'y/line-numbers--face)
+  ;; run directly if no load-theme explicitly
+  (y/line-numbers--face)
+  ;;(add-hook 'after-change-major-mode-hook #'display-line-numbers-mode)
+#+END_SRC
+
+** NΛNO Emacs
+[[https://github.com/rougier/nano-emacs][Nice]].
+#+BEGIN_SRC emacs-lisp
+  ;; Nano default settings (optional)
+  (require 'nano-defaults)
+
+  ;; Nano session saving (optional)
+  (require 'nano-session)
+
+  ;; Nano key bindings modification (optional)
+  (require 'nano-bindings)
+
+  ;; Nano counsel configuration (optional)
+  ;; Needs "counsel" package to be installed (M-x: package-install)
+  (require 'nano-counsel)
+
+  ;; Welcome message (optional)
+  (let ((inhibit-message t))
+    (message "Welcome to GNU Emacs / N Λ N O edition")
+    (message (format "Initialization time: %s" (emacs-init-time))))
+
+  ;; Splash (optional)
+  (unless (member "-no-splash" command-line-args)
+    (require 'nano-splash))
+
+  ;; Help (optional)
+  (add-to-list 'command-switch-alist '("-no-help" . (lambda (args))))
+  (unless (member "-no-help" command-line-args)
+    (require 'nano-help))
+(require 'nano-command)
+(provide 'nano)
+(menu-bar-mode -1)
+#+END_SRC
+
+** Org Mode
+#+BEGIN_SRC emacs-lisp
+(load "nano-writer.el")
+;(use-package writer-mode
+;  :custom
+;  (setq
+;   org-ellipsis " ▾ "
+;   org-hide-leading-stars t
+;   org-priority-highest ?A
+;   org-priority-lowest ?E))
+
+(defvar-local journal-file-path "~/Documents/org/roam/BulletJournal.org")
+(use-package org
+    ;:hook
+    ;(org-mode . company-latex-commands)
+    :custom
+    (setq org-directory "~/Documents/org"
+          org-ellipsis " ▾ "
+          org-hide-leading-stars t
+          org-priority-highest ?A
+          org-priority-lowest ?E
+          org-priority-faces
+          '((?A . 'all-the-icons-red)
+            (?B . 'all-the-icons-orange)
+            (?C . 'all-the-icons-yellow)
+            (?D . 'all-the-icons-green)
+            (?E . 'all-the-icons-blue))
+          org-todo-keywords
+          '((sequence "TODO(t)" "DOING(d)" "TBR(r)"
+                      "|" "READ(R)" "DONE(D)"))))
+#+END_SRC
+Ligatures
+- [x] Check
+#+BEGINS_SRC emacs-lisp tangle: no
+(require 'org)
+(append +ligatures-extra-symbols
+                 `(:checkbox      "☐"
+                   :pending       "◼"
+                   :checkedbox    "☑"
+                   :list_property "∷"
+                   :em_dash       "—"
+                   :ellipses      "…"
+                   :title         "𝙏"
+                   :subtitle      "𝙩"
+                   :author        "𝘼"
+                   :date          "𝘿"
+                   :property      "☸"
+                   :options       "⌥"
+                   :latex_class   "🄲"
+                   :latex_header  "⇥"
+                   :beamer_header "↠"
+                   :attr_latex    "🄛"
+                   :attr_html     "🄗"
+                   :begin_quote   "❮"
+                   :end_quote     "❯" ))
+
+(set-ligatures! 'org-mode
+                 :merge t
+                 :checkbox      "[ ]"
+                 :pending       "[-]"
+                 :checkedbox    "[X]"
+                 :list_property "::"
+                 :em_dash       "---"
+                 :ellipsis      "..."
+                 :title         "#+title:"
+                 :subtitle      "#+subtitle:"
+                 :author        "#+author:"
+                 :date          "#+date:"
+                 :property      "#+property:"
+                 :options       "#+options:"
+                 :latex_class   "#+latex_class:"
+                 :latex_header  "#+latex_header:"
+                 :beamer_header "#+beamer_header:"
+                 :attr_latex    "#+attr_latex:"
+                 :attr_html     "#+attr_latex:"
+                 :begin_quote   "#+begin_quote"
+                 :end_quote     "#+end_quote"
+                 :caption       "#+caption:"
+                 :header        "#+header:"
+                 :begin_export  "#+begin_export"
+                 :end_export    "#+end_export"
+                 :results       "#+RESULTS:"
+                 :property      ":PROPERTIES:"
+                 :end           ":END:"
+                 :priority_a    "[#A]"
+                 :priority_b    "[#B]"
+                 :priority_c    "[#C]"
+                 :priority_d    "[#D]"
+                 :priority_e    "[#E]")
+(plist-put +ligatures-extra-symbols :name "⁍")
+#+END_SRC
+
+** Org Roam
+For my [[https://github.com/DanielBiasiotto/braindump][braindump]].
+#+BEGIN_SRC emacs-lisp
+(use-package org-roam
+  :init
+  (setq org-roam-directory "~/Documents/org/roam"))
+#+END_SRC
+
+** Capture
+#+BEGIN_SRC emacs-lisp
+(setq org-capture-templates
+  '(("t" "Todo" entry (file+headline todo-file-path "Tasks")
+     "TODO %?  %^G \nSCHEDULED: %^t\n  %U")
+    ("r" "To Be Read" entry (file "~/Documents/org/roam/Letture.org")
+     "\n* TBR %?  %^G \n%U")
+    ("j" "Bullet Journal" entry (file+olp+datetree journal-file-path)
+     "** %<%H:%M> %?\n")
+    ("r" "Roam"  entry (file org-roam-find-file) ;;capture-new-file non funge per qualche motivo
+     "")))
+#+END_SRC
+
+** TODO Hydra
+
+** Projectile
+For managing projects.
+#+BEGIN_SRC emacs-lisp
+;; Projectile
+(use-package projectile
+  :bind-keymap
+  ("C-c p" . projectile-command-map)
+  :config
+  (projectile-mode +1))
+#+END_SRC
+
+** Which-Key
+Can't remember all the keybindings thanks.
+#+BEGIN_SRC emacs-lisp
+(use-package which-key
+  :init
+  ;(which-key-setup-side-window-right)
+  (setq which-key-use-C-h-commands nil
+    which-key-idle-delay 2.0
+    which-key-popup-type 'minibuffer)
+  :bind
+  (:map which-key-mode-map
+    ("C-x h" . which-key-C-h-dispatch)
+    ("C-c M-h" . which-key-C-h-dispatch)))
+(require 'which-key)
+(which-key-mode)
+#+END_SRC
+
+** Deft
+Fast and efficient
+#+BEGIN_SRC emacs-lisp
+(use-package deft
+  :after org
+  :bind
+  ("C-c d" . deft)
+  :custom
+  (deft-recursive t)
+  (deft-use-filter-string-for-filename t)
+  (deft-default-extension "org")
+  (deft-directory org-roam-directory))
+#+END_SRC
+* Babel Tangle on Save
+Tangle on Save? Reload?
+;; Local Variables:
+;; eval: (add-hook 'after-save-hook (lambda ()(if (y-or-n-p "Reload?")(load-file user-init-file))) nil t)
+;; eval: (add-hook 'after-save-hook (lambda ()(if (y-or-n-p "Tangle?")(org-babel-tangle))) nil t)
+;; End:
