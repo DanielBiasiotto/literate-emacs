@@ -6,12 +6,13 @@
 
 * Configuration
 ** About this file
-<<babel-init>>
-     This is a literate config tangled to emacs's =init.el= file.
-     Great sources for this kind of goodness are:
    :PROPERTIES:
    :CUSTOM_ID: babel-init
    :END:
+<<babel-init>>
+
+This is a literate config tangled to emacs's =init.el= file.
+Great sources for this kind of goodness are:
 - [[https://github.com/sachac/.emacs.d/blob/gh-pages/Sacha.org][Sacha Chua's Emacs]]
 - [[https://github.com/joseph8th/literatemacs/blob/master/README.org][LiteratEmacs]]
 
@@ -291,64 +292,74 @@ Good loking line numbers, currently using the position widget on ~nano-modeline~
                       "|" "READ(R)" "DONE(D)"))))
 #+END_SRC
 Ligatures
-- [x] Check
-#+BEGINS_SRC emacs-lisp tangle: no
-(require 'org)
-(append +ligatures-extra-symbols
-                 `(:checkbox      "☐"
-                   :pending       "◼"
-                   :checkedbox    "☑"
-                   :list_property "∷"
-                   :em_dash       "—"
-                   :ellipses      "…"
-                   :title         "𝙏"
-                   :subtitle      "𝙩"
-                   :author        "𝘼"
-                   :date          "𝘿"
-                   :property      "☸"
-                   :options       "⌥"
-                   :latex_class   "🄲"
-                   :latex_header  "⇥"
-                   :beamer_header "↠"
-                   :attr_latex    "🄛"
-                   :attr_html     "🄗"
-                   :begin_quote   "❮"
-                   :end_quote     "❯" ))
+- [] Check
 
-(set-ligatures! 'org-mode
-                 :merge t
-                 :checkbox      "[ ]"
-                 :pending       "[-]"
-                 :checkedbox    "[X]"
-                 :list_property "::"
-                 :em_dash       "---"
-                 :ellipsis      "..."
-                 :title         "#+title:"
-                 :subtitle      "#+subtitle:"
-                 :author        "#+author:"
-                 :date          "#+date:"
-                 :property      "#+property:"
-                 :options       "#+options:"
-                 :latex_class   "#+latex_class:"
-                 :latex_header  "#+latex_header:"
-                 :beamer_header "#+beamer_header:"
-                 :attr_latex    "#+attr_latex:"
-                 :attr_html     "#+attr_latex:"
-                 :begin_quote   "#+begin_quote"
-                 :end_quote     "#+end_quote"
-                 :caption       "#+caption:"
-                 :header        "#+header:"
-                 :begin_export  "#+begin_export"
-                 :end_export    "#+end_export"
-                 :results       "#+RESULTS:"
-                 :property      ":PROPERTIES:"
-                 :end           ":END:"
-                 :priority_a    "[#A]"
-                 :priority_b    "[#B]"
-                 :priority_c    "[#C]"
-                 :priority_d    "[#D]"
-                 :priority_e    "[#E]")
-(plist-put +ligatures-extra-symbols :name "⁍")
+#+BEGIN_SRC emacs-lisp
+  ;; For nice locking checkboxes
+  (setq org-html-checkbox-type 'unicode)
+  (setq org-html-checkbox-types
+   '((unicode (on . "<span class=\"task-done\">&#x2611;</span>")
+              (off . "<span class=\"task-todo\">&#x2610;</span>")
+              (trans . "<span class=\"task-in-progress\">[-]</span>"))))
+#+END_SRC
+
+#+BEGIN_SRC emacs-lisp :tangle no
+  (require 'org)
+  (append +ligatures-extra-symbols
+          `(:checkbox      "☐"
+            :pending       "◼"
+            :checkedbox    "☑"
+            :list_property "∷"
+            :em_dash       "—"
+            :ellipses      "…"
+            :title         "𝙏"
+            :subtitle      "𝙩"
+            :author        "𝘼"
+            :date          "𝘿"
+            :property      "☸"
+            :options       "⌥"
+            :latex_class   "🄲"
+            :latex_header  "⇥"
+            :beamer_header "↠"
+            :attr_latex    "🄛"
+            :attr_html     "🄗"
+            :begin_quote   "❮"
+            :end_quote     "❯" ))
+
+    (set-ligatures! 'org-mode
+                     :merge t
+                     :checkbox      "[ ]"
+                     :pending       "[-]"
+                     :checkedbox    "[X]"
+                     :list_property "::"
+                     :em_dash       "---"
+                     :ellipsis      "..."
+                     :title         "#+title:"
+                     :subtitle      "#+subtitle:"
+                     :author        "#+author:"
+                     :date          "#+date:"
+                     :property      "#+property:"
+                     :options       "#+options:"
+                     :latex_class   "#+latex_class:"
+                     :latex_header  "#+latex_header:"
+                     :beamer_header "#+beamer_header:"
+                     :attr_latex    "#+attr_latex:"
+                     :attr_html     "#+attr_latex:"
+                     :begin_quote   "#+begin_quote"
+                     :end_quote     "#+end_quote"
+                     :caption       "#+caption:"
+                     :header        "#+header:"
+                     :begin_export  "#+begin_export"
+                     :end_export    "#+end_export"
+                     :results       "#+RESULTS:"
+                     :property      ":PROPERTIES:"
+                     :end           ":END:"
+                     :priority_a    "[#A]"
+                     :priority_b    "[#B]"
+                     :priority_c    "[#C]"
+                     :priority_d    "[#D]"
+                     :priority_e    "[#E]")
+    (plist-put +ligatures-extra-symbols :name "⁍")
 #+END_SRC
 
 ** Org Roam
