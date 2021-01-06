@@ -25,7 +25,11 @@ Great sources for this kind of goodness are:
 
 ** Backups
 
-This is one of the things people usually want to change right away. By default, Emacs saves backup files in the current directory. These are the files ending in =~= that are cluttering up your directory lists. The following code stashes them all in =~/.config/emacs/backups=, where I can find them with =C-x C-f= (=find-file=) if I really need to.
+This is one of the things people usually want to change right away.
+By default, Emacs saves backup files in the current directory.
+These are the files ending in =~= that are cluttering up your directory lists.
+The following code stashes them all in =~/.config/emacs/backups=,
+where I can find them with =C-x C-f= (=find-file=) if I really need to.
 
 #+BEGIN_SRC emacs-lisp
 (setq backup-directory-alist '(("." . "~/.config/emacs/backups")))
@@ -42,7 +46,7 @@ Disk space is cheap. Save lots.
 
 ** Emacs Service
 #+BEGIN_EXAMPLE
-[Unit]
+n[Unit]
 Description=Emacs text editor
 Documentation=info:emacs man:emacs(1) https://gnu.org/software/emacs/
 
@@ -61,12 +65,15 @@ In =~/.config/systemd/user/emacs.service=
 ** Initialize
 Stuff to do on startup
 #+BEGIN_SRC emacs-lisp
-;; Path to nano emacs modules (mandatory)
-(add-to-list 'load-path "~/.config/emacs/config/nano-emacs")
-(add-to-list 'load-path "~/.config/emacs/config")
-(add-to-list 'load-path ".")
+        ;; Path to nano emacs modules (mandatory)
+  (add-to-list 'load-path "~/.config/emacs/config/nano-emacs")
+  (add-to-list 'load-path "~/.config/emacs/config")
+  (add-to-list 'load-path ".")
 
-;(setq max-lisp-eval-depth 5000) ;; For a bug in hooking Writer-mode to org
+  (require 'simpleclip)
+  (simpleclip-mode 1)
+;; Press super-c to copy without affecting the kill ring.
+;; Press super-x or super-v to cut or paste.
 #+END_SRC
 
 ** Command Line Options
@@ -168,7 +175,7 @@ Set =preferences= and Highlight corresponding =parentheses=
 (require 'nano-layout)
 #+END_SRC
 
-** Theme and Modeline
+*** Theme and Modeline
 #+BEGIN_SRC emacs-lisp
     ;; Theme
     (require 'nano-faces)
@@ -178,28 +185,41 @@ Set =preferences= and Highlight corresponding =parentheses=
 #+END_SRC
 Modeline in from =NΛNO-Emacs=, hacked to show time and battery
 #+BEGIN_SRC emacs-lisp
-  ;; Nano header & mode lines (optional)
-  (require 'time)
-  (require 'battery)
-  (setq system-time-locale "C") ;; show english even LANG to zh_CN.UTF-8
-  ;(display-time)
-  (display-battery-mode)
-  (setq battery-mode-line-format "%b%p%%" ;; sml would override it, Format is:[%L %b%p%% %t]
-    battery-update-interval 5)
-  (require 'nano-modeline)
-  (setq inihibit-startup-message nil)
-  ;; (use-package smart-mode-line         ;; Saved for when I'll try it
-  ;;    :init
-  ;;    (setq sml/col-number-format "%02c"
-  ;;      sml/battery-format " [%L %b%p%% %t]"
-  ;;      sml/name-width 15
-  ;;      sml/no-confirm-load-theme t
-  ;;      ;; sml/theme 'dark ;; others: light, respectful
-  ;;      sml/theme 'dark)
-  ;;     (sml/setup)
-  ;;     (add-to-list 'sml/replacer-regexp-list '(".*/linux" ":LK:")))
+     ;; Nano header & mode lines (optional)
+     (require 'time)
+     (require 'battery)
+     (setq system-time-locale "C") ;; show english even LANG to zh_CN.UTF-8
+     ;(display-time)
+     (display-battery-mode)
+     (setq battery-mode-line-format "%b%p%%" ;; sml would override it, Format is:[%L %b%p%% %t]
+       battery-update-interval 5)
+     (require 'nano-modeline)
+     (setq inihibit-startup-message nil)
 #+END_SRC
-** Line Numbers
+
+*** Startup screen
+#+BEGIN_SRC emacs-lisp
+        (use-package dashboard
+          :ensure t
+          :config
+          (dashboard-setup-startup-hook)
+          :custom
+          (dashboard-center-content t)
+          (dashboard-show-shortcuts nil)
+          (dashboard-startup-banner "~/Pictures/misc/undertale.png")
+          (dashboard-banner-logo-title "Hello There")
+          (dashboard-set-headings-icons t)
+          (dashboard-set-file-icons t)
+          (dashboard-set-footer nil)
+          (dashboard-items '((recents  . 5)
+                            (projects . 5)
+                            (agenda . 9)))
+          (dashboard-org-agenda-categories '("Tasks" "Appointments")))
+
+        (setq initial-buffer-choice
+              (lambda () (switch-to-buffer "*dashboard*")))
+#+END_SRC
+*** Line Numbers
 Good loking line numbers, currently using the position widget on ~nano-modeline~ though.
 #+BEGIN_SRC emacs-lisp
   ;; Line numbers
@@ -226,7 +246,7 @@ Good loking line numbers, currently using the position widget on ~nano-modeline~
   ;;(add-hook 'after-change-major-mode-hook #'display-line-numbers-mode)
 #+END_SRC
 
-** NΛNO Emacs
+*** NΛNO Emacs
 [[https://github.com/rougier/nano-emacs][Nice]].
 #+BEGIN_SRC emacs-lisp
   ;; Nano default settings (optional)
@@ -248,8 +268,8 @@ Good loking line numbers, currently using the position widget on ~nano-modeline~
     (message (format "Initialization time: %s" (emacs-init-time))))
 
   ;; Splash (optional)
-  (unless (member "-no-splash" command-line-args)
-    (require 'nano-splash))
+  ;(unless (member "-no-splash" command-line-args)
+  ;  (require 'nano-splash))
 
   ;; Help (optional)
   (add-to-list 'command-switch-alist '("-no-help" . (lambda (args))))
@@ -383,7 +403,269 @@ For my [[https://github.com/DanielBiasiotto/braindump][braindump]].
      "")))
 #+END_SRC
 
-** TODO Hydra
+** Hydra
+Have a look at the [[https://github.com/abo-abo/hydra/wiki/][community wiki]]
+
+_Movement Group_
+#+BEGIN_SRC emacs-lisp
+(global-set-key
+ (kbd "C-n")
+ (defhydra hydra-move
+   (:body-pre (next-line))
+   "move"
+   ("n" next-line)
+   ("p" previous-line)
+   ("f" forward-char)
+   ("b" backward-char)
+   ("a" beginning-of-line)
+   ("e" move-end-of-line)
+   ("v" scroll-up-command)
+   ;; Converting M-v to V here by analogy.
+   ("V" scroll-down-command)
+   ("l" recenter-top-bottom)))
+#+END_SRC
+
+_For interaction with a language server_ through ~lsp-mode~
+#+BEGIN_SRC emacs-lisp
+(defhydra hydra-lsp (:exit t :hint nil)
+  "
+ Buffer^^               Server^^                   Symbol
+-------------------------------------------------------------------------------------
+ [_f_] format           [_M-r_] restart            [_d_] declaration  [_i_] implementation  [_o_] documentation
+ [_m_] imenu            [_S_]   shutdown           [_D_] definition   [_t_] type            [_r_] rename
+ [_x_] execute action   [_M-s_] describe session   [_R_] references   [_s_] signature"
+  ("d" lsp-find-declaration)
+  ("D" lsp-ui-peek-find-definitions)
+  ("R" lsp-ui-peek-find-references)
+  ("i" lsp-ui-peek-find-implementation)
+  ("t" lsp-find-type-definition)
+  ("s" lsp-signature-help)
+  ("o" lsp-describe-thing-at-point)
+  ("r" lsp-rename)
+
+  ("f" lsp-format-buffer)
+  ("m" lsp-ui-imenu)
+  ("x" lsp-execute-code-action)
+
+  ("M-s" lsp-describe-session)
+  ("M-r" lsp-restart-workspace)
+  ("S" lsp-shutdown-workspace))
+#+END_SRC
+
+_Org-mode code-blocks_
+#+BEGIN_SRC emacs-lisp
+  (defhydra hydra-org-template (:color blue :hint nil)
+    "
+ _c_enter  _q_uote     _e_macs-lisp    _L_aTeX:
+ _l_atex   _E_xample   _p_erl          _i_ndex:
+ _a_scii   _v_erse     _P_erl tangled  _I_NCLUDE:
+ _s_rc     _n_ote      plant_u_ml      _H_TML:
+ _h_tml    ^ ^         ^ ^             _A_SCII:
+"
+    ("s" (hot-expand "<s"))
+    ("E" (hot-expand "<e"))
+    ("q" (hot-expand "<q"))
+    ("v" (hot-expand "<v"))
+    ("n" (hot-expand "<not"))
+    ("c" (hot-expand "<c"))
+    ("l" (hot-expand "<l"))
+    ("h" (hot-expand "<h"))
+    ("a" (hot-expand "<a"))
+    ("L" (hot-expand "<L"))
+    ("i" (hot-expand "<i"))
+    ("e" (hot-expand "<s" "emacs-lisp"))
+    ("p" (hot-expand "<s" "perl"))
+    ("u" (hot-expand "<s" "plantuml :file CHANGE.png"))
+    ("P" (hot-expand "<s" "perl" ":results output :exports both :shebang \"#!/usr/bin/env perl\"\n"))
+    ("I" (hot-expand "<I"))
+    ("H" (hot-expand "<H"))
+    ("A" (hot-expand "<A"))
+    ("<" self-insert-command "ins")
+    ("o" nil "quit"))
+
+  (require 'org-tempo) ; Required from org 9 onwards for old template expansion
+  ;; Reset the org-template expnsion system, this is need after upgrading to org 9 for some reason
+  (setq org-structure-template-alist (eval (car (get 'org-structure-template-alist 'standard-value))))
+  (defun hot-expand (str &optional mod header)
+    "Expand org template.
+
+STR is a structure template string recognised by org like <s. MOD is a
+string with additional parameters to add the begin line of the
+structure element. HEADER string includes more parameters that are
+prepended to the element after the #+HEADER: tag."
+    (let (text)
+      (when (region-active-p)
+        (setq text (buffer-substring (region-beginning) (region-end)))
+        (delete-region (region-beginning) (region-end))
+        (deactivate-mark))
+      (when header (insert "#+HEADER: " header) (forward-line))
+      (insert str)
+      (org-tempo-complete-tag)
+      (when mod (insert mod) (forward-line))
+      (when text (insert text))))
+
+  (define-key org-mode-map "<"
+    (lambda () (interactive)
+      (if (or (region-active-p) (looking-back "^"))
+          (hydra-org-template/body)
+        (self-insert-command 1))))
+
+  (eval-after-load "org"
+    '(cl-pushnew
+    '("not" . "note")
+      org-structure-template-alist))
+#+END_SRC
+
+_Org-agenda_ taken from Spacemacs
+#+BEGIN_SRC emacs-lisp
+  ;; Hydra for org agenda (graciously taken from Spacemacs)
+  (defhydra hydra-org-agenda (:pre (setq which-key-inhibit t)
+                                   :post (setq which-key-inhibit nil)
+                                   :hint none)
+    "
+  Org agenda (_q_uit)
+
+  ^Clock^      ^Visit entry^              ^Date^             ^Other^
+  ^-----^----  ^-----------^------------  ^----^-----------  ^-----^---------
+  _ci_ in      _SPC_ in other window      _ds_ schedule      _gr_ reload
+  _co_ out     _TAB_ & go to location     _dd_ set deadline  _._  go to today
+  _cq_ cancel  _RET_ & del other windows  _dt_ timestamp     _gd_ go to date
+  _cj_ jump    _o_   link                 _+_  do later      ^^
+  ^^           ^^                         _-_  do earlier    ^^
+  ^^           ^^                         ^^                 ^^
+  ^View^          ^Filter^                 ^Headline^         ^Toggle mode^
+  ^----^--------  ^------^---------------  ^--------^-------  ^-----------^----
+  _vd_ day        _ft_ by tag              _ht_ set status    _tf_ follow
+  _vw_ week       _fr_ refine by tag       _hk_ kill          _tl_ log
+  _vt_ fortnight  _fc_ by category         _hr_ refile        _ta_ archive trees
+  _vm_ month      _fh_ by top headline     _hA_ archive       _tA_ archive files
+  _vy_ year       _fx_ by regexp           _h:_ set tags      _tr_ clock report
+  _vn_ next span  _fd_ delete all filters  _hp_ set priority  _td_ diaries
+  _vp_ prev span  ^^                       ^^                 ^^
+  _vr_ reset      ^^                       ^^                 ^^
+  ^^              ^^                       ^^                 ^^
+  "
+    ;; Entry
+    ("hA" org-agenda-archive-default)
+    ("hk" org-agenda-kill)
+    ("hp" org-agenda-priority)
+    ("hr" org-agenda-refile)
+    ("h:" org-agenda-set-tags)
+    ("ht" org-agenda-todo)
+    ;; Visit entry
+    ("o"   link-hint-open-link :exit t)
+    ("<tab>" org-agenda-goto :exit t)
+    ("TAB" org-agenda-goto :exit t)
+    ("SPC" org-agenda-show-and-scroll-up)
+    ("RET" org-agenda-switch-to :exit t)
+    ;; Date
+    ("dt" org-agenda-date-prompt)
+    ("dd" org-agenda-deadline)
+    ("+" org-agenda-do-date-later)
+    ("-" org-agenda-do-date-earlier)
+    ("ds" org-agenda-schedule)
+    ;; View
+    ("vd" org-agenda-day-view)
+    ("vw" org-agenda-week-view)
+    ("vt" org-agenda-fortnight-view)
+    ("vm" org-agenda-month-view)
+    ("vy" org-agenda-year-view)
+    ("vn" org-agenda-later)
+    ("vp" org-agenda-earlier)
+    ("vr" org-agenda-reset-view)
+    ;; Toggle mode
+    ("ta" org-agenda-archives-mode)
+    ("tA" (org-agenda-archives-mode 'files))
+    ("tr" org-agenda-clockreport-mode)
+    ("tf" org-agenda-follow-mode)
+    ("tl" org-agenda-log-mode)
+    ("td" org-agenda-toggle-diary)
+    ;; Filter
+    ("fc" org-agenda-filter-by-category)
+    ("fx" org-agenda-filter-by-regexp)
+    ("ft" org-agenda-filter-by-tag)
+    ("fr" org-agenda-filter-by-tag-refine)
+    ("fh" org-agenda-filter-by-top-headline)
+    ("fd" org-agenda-filter-remove-all)
+    ;; Clock
+    ("cq" org-agenda-clock-cancel)
+    ("cj" org-agenda-clock-goto :exit t)
+    ("ci" org-agenda-clock-in :exit t)
+    ("co" org-agenda-clock-out)
+    ;; Other
+    ("q" nil :exit t)
+    ("gd" org-agenda-goto-date)
+    ("." org-agenda-goto-today)
+    ("gr" org-agenda-redo))
+#+END_SRC
+
+_For pdf-tools_
+#+BEGIN_SRC emacs-lisp
+(defhydra hydra-pdftools (:color blue :hint nil)
+        "
+                                                                      ╭───────────┐
+       Move  History   Scale/Fit     Annotations  Search/Link    Do   │ PDF Tools │
+   ╭──────────────────────────────────────────────────────────────────┴───────────╯
+         ^^_g_^^      _B_    ^↧^    _+_    ^ ^     [_al_] list    [_s_] search    [_u_] revert buffer
+         ^^^↑^^^      ^↑^    _H_    ^↑^  ↦ _W_ ↤   [_am_] markup  [_o_] outline   [_i_] info
+         ^^_p_^^      ^ ^    ^↥^    _0_    ^ ^     [_at_] text    [_F_] link      [_d_] dark mode
+         ^^^↑^^^      ^↓^  ╭─^─^─┐  ^↓^  ╭─^ ^─┐   [_ad_] delete  [_f_] search link
+    _h_ ←pag_e_→ _l_  _N_  │ _P_ │  _-_    _b_     [_aa_] dired
+         ^^^↓^^^      ^ ^  ╰─^─^─╯  ^ ^  ╰─^ ^─╯   [_y_]  yank
+         ^^_n_^^      ^ ^  _r_eset slice box
+         ^^^↓^^^
+         ^^_G_^^
+   --------------------------------------------------------------------------------
+        "
+        ("\\" hydra-master/body "back")
+        ("<ESC>" nil "quit")
+        ("al" pdf-annot-list-annotations)
+        ("ad" pdf-annot-delete)
+        ("aa" pdf-annot-attachment-dired)
+        ("am" pdf-annot-add-markup-annotation)
+        ("at" pdf-annot-add-text-annotation)
+        ("y"  pdf-view-kill-ring-save)
+        ("+" pdf-view-enlarge :color red)
+        ("-" pdf-view-shrink :color red)
+        ("0" pdf-view-scale-reset)
+        ("H" pdf-view-fit-height-to-window)
+        ("W" pdf-view-fit-width-to-window)
+        ("P" pdf-view-fit-page-to-window)
+        ("n" pdf-view-next-page-command :color red)
+        ("p" pdf-view-previous-page-command :color red)
+        ("d" pdf-view-dark-minor-mode)
+        ("b" pdf-view-set-slice-from-bounding-box)
+        ("r" pdf-view-reset-slice)
+        ("g" pdf-view-first-page)
+        ("G" pdf-view-last-page)
+        ("e" pdf-view-goto-page)
+        ("o" pdf-outline)
+        ("s" pdf-occur)
+        ("i" pdf-misc-display-metadata)
+        ("u" pdf-view-revert-buffer)
+        ("F" pdf-links-action-perfom)
+        ("f" pdf-links-isearch-link)
+        ("B" pdf-history-backward :color red)
+        ("N" pdf-history-forward :color red)
+        ("l" image-forward-hscroll :color red)
+        ("h" image-backward-hscroll :color red))
+#+END_SRC
+Magit
+#+begin_src emacs-lisp
+(defhydra yt-hydra/help (:color blue :hint nil)
+  "
+_mp_ magit-push #_mc_ magit-commit #_md_ magit diff #_mla_ magit diff #_mla_ magit status
+"
+  ;;Magit part
+  ("mp" magit-push)
+  ("mc" magit-commit)
+  ("md" magit-diff)
+  ("mla" magit-log-all)
+  ("ms" magit-status)
+  )
+(global-set-key (kbd "<f1>") 'yt-hydra/help/body)
+#+end_src
+
 
 ** Projectile
 For managing projects.
@@ -426,6 +708,55 @@ Fast and efficient
   (deft-default-extension "org")
   (deft-directory org-roam-directory))
 #+END_SRC
+
+** PDF and EPUB support
+#+BEGIN_SRC emacs-lisp
+  (use-package pdf-tools
+      :ensure t
+      :config
+      (pdf-tools-install)
+      (setq-default pdf-view-display-size 'fit-page)
+      (bind-keys :map pdf-view-mode-map
+          ("\\" . hydra-pdftools/body)
+          ("<s-spc>" .  pdf-view-scroll-down-or-next-page)
+          ("g"  . pdf-view-first-page)
+          ("G"  . pdf-view-last-page)
+          ("l"  . image-forward-hscroll)
+          ("h"  . image-backward-hscroll)
+          ("j"  . pdf-view-next-page)
+          ("k"  . pdf-view-previous-page)
+          ("e"  . pdf-view-goto-page)
+          ("u"  . pdf-view-revert-buffer)
+          ("al" . pdf-annot-list-annotations)
+          ("ad" . pdf-annot-delete)
+          ("aa" . pdf-annot-attachment-dired)
+          ("am" . pdf-annot-add-markup-annotation)
+          ("at" . pdf-annot-add-text-annotation)
+          ("y"  . pdf-view-kill-ring-save)
+          ("i"  . pdf-misc-display-metadata)
+          ("s"  . pdf-occur)
+          ("b"  . pdf-view-set-slice-from-bounding-box)
+          ("r"  . pdf-view-reset-slice))
+       ;(use-package org-pdfview
+       ;  :ensure t)
+      )
+#+END_SRC
+For =EPUB= I use ~nov.el~
+Open the EPUB file with C-x C-f ~/novels/novel.epub,
+scroll with SPC and switch chapters with n and p.
+More keybinds can be looked up with F1 m.
+
+#+begin_src emacs-lisp
+(defun my-nov-font-setup ()
+   (face-remap-add-relative 'variable-pitch :family "Liberation Serif"
+                                            :height 1.0))
+(use-package nov
+  :config
+  (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode))
+  :hook
+  (nov-mode-hook . my-nov-font-setup))
+#+end_src
+
 * Babel Tangle on Save
 Tangle on Save? Reload?
 ;; Local Variables:
